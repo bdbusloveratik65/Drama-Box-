@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>MovieZone</title>
+    
+    <script src='//libtl.com/sdk.js' data-zone='11495270' data-sdk='show_11495270'></script>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        body {
+            background-color: #0f172a;
+            color: #f8fafc;
+            font-family: system-ui, -apple-system, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .glass {
+            background: rgba(30, 41, 59, 0.75);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .gradient-text {
+            background: linear-gradient(135deg, #38bdf8, #818cf8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+    </style>
+</head>
+<body class="pb-24 no-scrollbar">
+
+    <header class="sticky top-0 z-40 glass px-4 py-3 flex items-center justify-between shadow-lg">
+        <div class="flex items-center space-x-2">
+            <button id="backBtn" onclick="goBack()" class="hidden text-slate-300 mr-1 text-lg">
+                <i class="fa-solid fa-arrow-left"></i>
+            </button>
+            <i class="fa-brands fa-telegram text-2xl text-sky-400"></i>
+            <h1 class="text-lg font-bold gradient-text">MovieZone</h1>
+        </div>
+        <div class="flex items-center glass px-3 py-1 rounded-full text-amber-400 font-bold text-xs space-x-1">
+            <i class="fa-solid fa-coins"></i>
+            <span id="headerCoins">0</span>
+        </div>
+    </header>
+
+    <div id="pageHome" class="page-section p-4 space-y-5">
+        <div class="relative rounded-2xl overflow-hidden glass p-4 text-center">
+            <div class="absolute inset-0 bg-gradient-to-r from-sky-500/20 to-purple-500/20 z-0"></div>
+            <div class="relative z-10 space-y-2">
+                <span class="bg-sky-500/20 text-sky-400 text-xs px-2.5 py-1 rounded-full border border-sky-500/30">Drama Box</span>
+                <h2 class="text-xl font-extrabold text-white">Welcome</h2>
+                <p class="text-xs text-slate-300">ভিডিও নির্বাচন করুন এবং আনলক করে উপভোগ করুন।</p>
+            </div>
+        </div>
+
+        <div>
+            <div class="flex justify-between items-center mb-3">
+                <h3 class="text-md font-bold text-slate-200"><i class="fa-solid fa-film text-sky-400 mr-2"></i>ভিডিও সমূহ</h3>
+                <span class="text-xs text-slate-400" id="videoCount">0 Videos</span>
+            </div>
+            
+            <div id="videoGrid" class="grid grid-cols-2 gap-3">
+                <div class="col-span-2 text-center py-8 text-slate-500 text-sm">
+                    <i class="fa-solid fa-spinner fa-spin text-2xl mb-2"></i>
+                    <p>ভিডিও লোড হচ্ছে...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="pageVideoDetails" class="page-section p-4 space-y-4 hidden">
+        <div class="glass rounded-2xl overflow-hidden p-3 space-y-3">
+            <div class="relative aspect-video rounded-xl overflow-hidden bg-slate-800">
+                <img id="detailThumbnail" src="" class="w-full h-full object-cover">
+            </div>
+            
+            <h2 id="detailTitle" class="text-lg font-bold text-white"></h2>
+            
+            <div class="flex justify-between items-center text-xs text-slate-400 border-t border-b border-slate-700/50 py-2">
+                <span>Type: <strong id="detailType" class="text-sky-400"></strong></span>
+                <span>Cost: <strong id="detailCost" class="text-amber-400"></strong></span>
+            </div>
+
+            <div id="adProgressSection" class="space-y-2 pt-2">
+                <p class="text-xs text-slate-300 text-center">ভিডিও আনলক করতে ৩টি বিজ্ঞাপন সম্পূর্ণ দেখুন:</p>
+                <div class="flex justify-center items-center space-x-3 py-2">
+                    <div id="step1" class="w-9 h-9 rounded-full border border-slate-700 flex items-center justify-center text-xs font-bold">1</div>
+                    <div class="w-6 h-0.5 bg-slate-700"></div>
+                    <div id="step2" class="w-9 h-9 rounded-full border border-slate-700 flex items-center justify-center text-xs font-bold">2</div>
+                    <div class="w-6 h-0.5 bg-slate-700"></div>
+                    <div id="step3" class="w-9 h-9 rounded-full border border-slate-700 flex items-center justify-center text-xs font-bold">3</div>
+                </div>
+            </div>
+
+            <div class="pt-2">
+                <button id="actionBtn" onclick="handleDetailAction()" class="w-full bg-sky-500 hover:bg-sky-600 text-white font-bold py-3 rounded-xl text-sm flex items-center justify-center space-x-2 shadow-lg active:scale-95 transition">
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="pageEarn" class="page-section p-4 space-y-4 hidden">
+        <div class="glass p-5 rounded-2xl text-center space-y-3">
+            <div class="w-16 h-16 bg-amber-500/20 text-amber-400 rounded-full flex items-center justify-center mx-auto text-3xl">
+                <i class="fa-solid fa-coins"></i>
+            </div>
+            <h2 class="text-lg font-bold text-white">Coin Store</h2>
+            <p class="text-xs text-slate-300">বিজ্ঞাপন দেখে ফ্রিতে কয়েন সংগ্রহ করুন।</p>
+            <div class="text-2xl font-black text-amber-400" id="earnCoinBalance">0 Coins</div>
+        </div>
+
+        <div class="space-y-3">
+            <h3 class="text-sm font-bold text-slate-300">টাস্ক সমূহের তালিকা</h3>
+            <div id="taskListContainer" class="space-y-2">
+                <div class="text-center py-6 text-slate-500 text-xs">টাস্ক লোড হচ্ছে...</div>
+            </div>
+        </div>
+    </div>
+
+    <div id="pageProfile" class="page-section p-4 space-y-4 hidden">
+        <div class="glass p-5 rounded-2xl text-center space-y-3">
+            <div class="w-20 h-20 bg-slate-700 rounded-full mx-auto flex items-center justify-center border-2 border-sky-400 overflow-hidden">
+                <i class="fa-solid fa-user text-3xl text-slate-400"></i>
+            </div>
+            <div>
+                <h2 class="text-lg font-bold text-white" id="profileName">User Name</h2>
+                <p class="text-xs text-sky-400" id="profileUsername">@username</p>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+            <div class="glass p-4 rounded-xl text-center">
+                <div class="text-xs text-slate-400 mb-1">Telegram ID</div>
+                <div class="text-sm font-bold text-slate-200" id="profileTgId">12345678</div>
+            </div>
+            <div class="glass p-4 rounded-xl text-center">
+                <div class="text-xs text-slate-400 mb-1">Coin Balance</div>
+                <div class="text-sm font-bold text-amber-400" id="profileCoins">0</div>
+            </div>
+        </div>
+    </div>
+
+    <nav id="bottomNav" class="fixed bottom-0 left-0 right-0 glass border-t border-slate-800 px-6 py-2 flex justify-around items-center z-40">
+        <button onclick="switchTab('Home')" id="navHome" class="flex flex-col items-center space-y-1 text-sky-400">
+            <i class="fa-solid fa-house text-lg"></i>
+            <span class="text-[10px] font-bold">Home</span>
+        </button>
+        <button onclick="switchTab('Earn')" id="navEarn" class="flex flex-col items-center space-y-1 text-slate-400">
+            <i class="fa-solid fa-coins text-lg"></i>
+            <span class="text-[10px] font-bold">Coins</span>
+        </button>
+        <button onclick="switchTab('Profile')" id="navProfile" class="flex flex-col items-center space-y-1 text-slate-400">
+            <i class="fa-solid fa-user text-lg"></i>
+            <span class="text-[10px] font-bold">Profile</span>
+        </button>
+    </nav>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getDatabase, ref, set, onValue, update } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDDE2Uso5AU4BdcG6RT9lfNmDGjx6A0myM",
+            authDomain: "movie-zone-ubdg.firebaseapp.com",
+            databaseURL: "https://movie-zone-ubdg-default-rtdb.firebaseio.com",
+            projectId: "movie-zone-ubdg",
+            storageBucket: "movie-zone-ubdg.firebasestorage.app",
+            messagingSenderId: "640511850305",
+            appId: "1:640511850305:web:d2181dbd8dc2b8ba0993c0"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        const tg = window.Telegram?.WebApp;
+        if(tg) { 
+            tg.expand();
+            tg.enableClosingConfirmation(); 
+        }
+
+        const tgUser = tg?.initDataUnsafe?.user || { id: "guest_user", first_name: "Guest", username: "guest" };
+        const userId = tgUser.id.toString();
+
+        let localData = JSON.parse(localStorage.getItem('mz_user_data')) || {
+            coins: 0,
+            unlocked: {},
+            adProgress: {}
+        };
+
+        function saveLocalStorage() {
+            localStorage.setItem('mz_user_data', JSON.stringify(localData));
+            updateUI();
+        }
+
+        // Firebase Sync
+        const userRef = ref(db, 'users/' + userId);
+        onValue(userRef, (snapshot) => {
+            if (snapshot.exists()) {
+                const fbData = snapshot.val();
+                localData.coins = fbData.coins !== undefined ? fbData.coins : localData.coins;
+                localData.unlocked = fbData.unlocked || localData.unlocked || {};
+            } else {
+                set(userRef, {
+                    name: tgUser.first_name,
+                    username: tgUser.username || '',
+                    coins: localData.coins,
+                    unlocked: localData.unlocked || {}
+                });
+            }
+            saveLocalStorage();
+        });
+
+        function syncToFirebase() {
+            update(ref(db, 'users/' + userId), {
+                coins: localData.coins,
+                unlocked: localData.unlocked || {}
+            });
+            saveLocalStorage();
+        }
+
+        function updateUI() {
+            document.getElementById('headerCoins').innerText = localData.coins;
+            document.getElementById('earnCoinBalance').innerText = `${localData.coins} Coins`;
+            document.getElementById('profileCoins').innerText = localData.coins;
+        }
+
+        document.getElementById('profileName').innerText = tgUser.first_name || 'User';
+        document.getElementById('profileUsername').innerText = tgUser.username ? `@${tgUser.username}` : '@user';
+        document.getElementById('profileTgId').innerText = userId;
+
+        // --- Render Realtime Videos (New Posts First: .reverse()) ---
+        let globalVideos = {};
+        onValue(ref(db, 'videos'), (snapshot) => {
+            const grid = document.getElementById('videoGrid');
+            grid.innerHTML = '';
+
+            if (snapshot.exists()) {
+                globalVideos = snapshot.val();
+                // .reverse() দিয়ে নতুন আপলোড করা পোস্ট সবার উপরে আনা হয়েছে
+                const videoList = Object.keys(globalVideos).map(key => ({ id: key, ...globalVideos[key] })).reverse();
+                document.getElementById('videoCount').innerText = `${videoList.length} Videos`;
+
+                videoList.forEach(vid => {
+                    const isUnlocked = localData.unlocked && localData.unlocked[vid.id];
+                    
+                    const card = document.createElement('div');
+                    card.className = "glass rounded-xl overflow-hidden flex flex-col justify-between cursor-pointer active:scale-95 transition";
+                    card.onclick = () => openVideoDetails(vid.id);
+                    card.innerHTML = `
+                        <div class="relative aspect-video bg-slate-800">
+                            <img src="${vid.thumbnail}" class="w-full h-full object-cover">
+                            <span class="absolute top-2 right-2 text-[10px] font-bold px-2 py-0.5 rounded-full ${vid.type === 'premium' ? 'bg-amber-500 text-black' : 'bg-emerald-500 text-white'}">
+                                ${vid.type === 'premium' ? '<i class="fa-solid fa-crown mr-1"></i>Premium' : 'Free'}
+                            </span>
+                        </div>
+                        <div class="p-2.5 space-y-2">
+                            <h4 class="font-semibold text-xs line-clamp-1 text-slate-200">${vid.title}</h4>
+                            <div class="w-full py-1.5 rounded-lg text-xs font-bold text-white flex items-center justify-center space-x-1 ${isUnlocked ? 'bg-emerald-600' : 'bg-sky-500'}">
+                                <i class="fa-solid ${isUnlocked ? 'fa-circle-check' : 'fa-play'}"></i>
+                                <span>${isUnlocked ? 'Unlocked' : 'View Details'}</span>
+                            </div>
+                        </div>
+                    `;
+                    grid.appendChild(card);
+                });
+            } else {
+                grid.innerHTML = `<p class="col-span-2 text-center text-slate-400 py-6 text-xs">কোনো ভিডিও পাওয়া যায়নি।</p>`;
+            }
+        });
+
+        // --- Load Admin Earn Tasks (New Tasks First: .reverse()) ---
+        onValue(ref(db, 'tasks'), (snapshot) => {
+            const container = document.getElementById('taskListContainer');
+            container.innerHTML = '';
+
+            if (snapshot.exists()) {
+                const tasks = snapshot.val();
+                const taskKeys = Object.keys(tasks).reverse(); // নতুন টাস্ক সব সময় উপরে থাকবে
+                
+                taskKeys.forEach(key => {
+                    const t = tasks[key];
+                    const div = document.createElement('div');
+                    div.className = "glass p-3 rounded-xl flex items-center justify-between";
+                    div.innerHTML = `
+                        <div class="flex items-center space-x-3">
+                            <div class="p-2 bg-sky-500/20 text-sky-400 rounded-lg text-lg"><i class="fa-solid fa-rectangle-ad"></i></div>
+                            <div>
+                                <h4 class="text-xs font-bold text-white">${t.title}</h4>
+                                <p class="text-[10px] text-amber-400 font-semibold">+${t.reward} Coins</p>
+                            </div>
+                        </div>
+                        <button id="taskBtn_${key}" onclick="executeMonetagTask('${key}', ${t.reward})" class="bg-sky-500 hover:bg-sky-600 text-white font-bold text-xs px-3.5 py-1.5 rounded-lg transition">
+                            Watch Ad
+                        </button>
+                    `;
+                    container.appendChild(div);
+                });
+            } else {
+                container.innerHTML = `<p class="text-center text-slate-500 py-4 text-xs">কোনো এড টাস্ক উপলব্ধ নেই।</p>`;
+            }
+        });
+
+        // Tab Navigation
+        window.switchTab = function(tabName) {
+            document.querySelectorAll('.page-section').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('nav button').forEach(el => el.className = "flex flex-col items-center space-y-1 text-slate-400");
+            document.getElementById('backBtn').classList.add('hidden');
+
+            document.getElementById(`page${tabName}`).classList.remove('hidden');
+            document.getElementById(`nav${tabName}`).className = "flex flex-col items-center space-y-1 text-sky-400";
+        };
+
+        let selectedVideoId = null;
+
+        window.openVideoDetails = function(vidId) {
+            selectedVideoId = vidId;
+            const vid = globalVideos[vidId];
+            if (!vid) return;
+
+            document.querySelectorAll('.page-section').forEach(el => el.classList.add('hidden'));
+            document.getElementById('pageVideoDetails').classList.remove('hidden');
+            document.getElementById('backBtn').classList.remove('hidden');
+
+            document.getElementById('detailThumbnail').src = vid.thumbnail;
+            document.getElementById('detailTitle').innerText = vid.title;
+            document.getElementById('detailType').innerText = vid.type.toUpperCase();
+            document.getElementById('detailCost').innerText = vid.type === 'premium' ? `${vid.cost} Coins` : '3 Ads Watch';
+
+            renderDetailActionButton();
+        };
+
+        function renderDetailActionButton() {
+            const vid = globalVideos[selectedVideoId];
+            if (!vid) return;
+            const isUnlocked = localData.unlocked && localData.unlocked[selectedVideoId];
+            const actionBtn = document.getElementById('actionBtn');
+            const adSection = document.getElementById('adProgressSection');
+
+            if (isUnlocked) {
+                adSection.classList.add('hidden');
+                actionBtn.className = "w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl text-sm flex items-center justify-center space-x-2";
+                actionBtn.innerHTML = `<i class="fa-solid fa-arrow-up-right-from-square"></i> <span>Open Video in Browser</span>`;
+            } else if (vid.type === 'premium') {
+                adSection.classList.add('hidden');
+                actionBtn.className = "w-full bg-amber-500 hover:bg-amber-600 text-black font-bold py-3 rounded-xl text-sm flex items-center justify-center space-x-2";
+                actionBtn.innerHTML = `<i class="fa-solid fa-lock"></i> <span>Unlock with ${vid.cost} Coins</span>`;
+            } else {
+                adSection.classList.remove('hidden');
+                const watchedCount = (localData.adProgress && localData.adProgress[selectedVideoId]) || 0;
+                
+                for (let i = 1; i <= 3; i++) {
+                    const step = document.getElementById(`step${i}`);
+                    if (i <= watchedCount) {
+                        step.className = "w-9 h-9 rounded-full border border-sky-400 bg-sky-500/20 text-sky-400 flex items-center justify-center text-xs font-bold";
+                    } else {
+                        step.className = "w-9 h-9 rounded-full border border-slate-700 text-slate-500 flex items-center justify-center text-xs font-bold";
+                    }
+                }
+
+                actionBtn.className = "w-full bg-sky-500 hover:bg-sky-600 text-white font-bold py-3 rounded-xl text-sm flex items-center justify-center space-x-2";
+                actionBtn.innerHTML = `<i class="fa-solid fa-rectangle-ad"></i> <span>Watch Ad (${watchedCount}/3)</span>`;
+            }
+        }
+
+        // --- Monetag Ad Call for Unlocking Videos ---
+        window.handleDetailAction = function() {
+            const vid = globalVideos[selectedVideoId];
+            const isUnlocked = localData.unlocked && localData.unlocked[selectedVideoId];
+
+            if (isUnlocked) {
+                if (tg && tg.openLink) {
+                    tg.openLink(vid.url);
+                } else {
+                    window.open(vid.url, '_blank');
+                }
+                return;
+            }
+
+            if (vid.type === 'premium') {
+                if (localData.coins >= vid.cost) {
+                    if (confirm(`ভিডিওটি আনলক করতে ${vid.cost} কয়েন কাটা হবে।`)) {
+                        localData.coins -= vid.cost;
+                        if (!localData.unlocked) localData.unlocked = {};
+                        localData.unlocked[selectedVideoId] = true;
+                        syncToFirebase();
+                        alert('ভিডিওটি আনলক হয়েছে!');
+                        renderDetailActionButton();
+                    }
+                } else {
+                    alert('আপনার পর্যাপ্ত কয়েন নেই! Coin Store থেকে কয়েন আর্ন করুন।');
+                }
+            } else {
+                // Monetag Rewarded Popup Trigger
+                if (typeof show_11495270 === 'function') {
+                    show_11495270('pop').then(() => {
+                        // User Watched Ad Successfully
+                        if (!localData.adProgress) localData.adProgress = {};
+                        let currentWatched = localData.adProgress[selectedVideoId] || 0;
+                        currentWatched++;
+
+                        if (currentWatched >= 3) {
+                            if (!localData.unlocked) localData.unlocked = {};
+                            localData.unlocked[selectedVideoId] = true;
+                            localData.adProgress[selectedVideoId] = 0;
+                            alert('অভিনন্দন! ৩টি এড সম্পূর্ণ দেখে ভিডিও আনলক হয়েছে!');
+                        } else {
+                            localData.adProgress[selectedVideoId] = currentWatched;
+                            alert(`বিজ্ঞাপন সম্পন্ন হয়েছে! (${currentWatched}/3)`);
+                        }
+                        syncToFirebase();
+                        renderDetailActionButton();
+                    }).catch(e => {
+                        alert('বিজ্ঞাপন সঠিকভাবে সম্পূর্ণ হয়নি! অনুগ্রহ করে আবার চেষ্টা করুন।');
+                    });
+                } else {
+                    alert('বিজ্ঞাপন ব্যবস্থা প্রস্তুত হচ্ছে, কিছুক্ষণ পর চেষ্টা করুন!');
+                }
+            }
+        };
+
+        // --- Monetag Rewarded Ad Call for Earning Coins Task ---
+        window.executeMonetagTask = function(taskId, reward) {
+            const btn = document.getElementById(`taskBtn_${taskId}`);
+
+            if (typeof show_11495270 === 'function') {
+                show_11495270('pop').then(() => {
+                    // Reward User
+                    localData.coins += parseInt(reward);
+                    syncToFirebase();
+
+                    if(btn) {
+                        btn.innerText = "Completed";
+                        btn.disabled = true;
+                        btn.className = "bg-emerald-600 text-white font-bold text-xs px-3.5 py-1.5 rounded-lg";
+                    }
+                    alert(`বিজ্ঞাপন দেখার জন্য +${reward} কয়েন যুক্ত করা হয়েছে!`);
+                }).catch(e => {
+                    alert('বিজ্ঞাপন লোড হতে সমস্যা হয়েছে। আবার চেষ্টা করুন।');
+                });
+            } else {
+                alert('বিজ্ঞাপন ব্যবস্থা চালু হচ্ছে, ১-২ সেকেন্ড পর আবার চেষ্টা করুন!');
+            }
+        };
+
+        window.goBack = function() {
+            switchTab('Home');
+        };
+
+        updateUI();
+    </script>
+</body>
+</html>
