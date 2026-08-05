@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>MovieZone - Telegram Mini App</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    
+    <script src='//ks311495270.com/11495270/show_11495270.js'></script>
+
+    <style>
+        body {
+            background-color: #0b0f19;
+            color: #f8fafc;
+            font-family: system-ui, -apple-system, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+        }
+        
+        .glass {
+            background: rgba(23, 32, 51, 0.75);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        /* Fixed Aspect Ratio Thumbnail Styling */
+        .thumb-box {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 16 / 9;
+            overflow: hidden;
+            border-radius: 0.75rem;
+            background-color: #1e293b;
+        }
+        .thumb-box img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            object-position: center;
+            transition: transform 0.3s ease;
+        }
+        .thumb-box:hover img {
+            transform: scale(1.05);
+        }
+    </style>
+</head>
+<body class="pb-24 pt-2 no-scrollbar">
+
+    <div id="banScreen" class="fixed inset-0 bg-slate-950/95 z-50 hidden flex flex-col items-center justify-center p-6 text-center space-y-4">
+        <div class="w-16 h-16 rounded-full bg-red-500/20 text-red-500 flex items-center justify-center text-3xl">
+            <i class="fa-solid fa-user-slash"></i>
+        </div>
+        <h2 class="text-xl font-bold text-white">আপনার একাউন্টটি ব্যান করা হয়েছে!</h2>
+        <p class="text-xs text-slate-400 max-w-xs leading-relaxed" id="banReasonMsg">
+            অনিয়মের কারণে আপনার অ্যাকাউন্টটি সাময়িকভাবে স্থগিত করা হয়েছে।
+        </p>
+        <div class="glass p-4 rounded-2xl w-full max-w-xs border border-red-500/30 text-left space-y-2">
+            <h3 class="text-xs font-bold text-red-400 flex items-center gap-2">
+                <i class="fa-solid fa-headset"></i> আনব্যান আবেদনের নিয়ম:
+            </h3>
+            <p class="text-[11px] text-slate-300">
+                আপনার কারণ ও ইউজার আইডি উল্লেখ করে মেসেজ পাঠান:
+            </p>
+            <div class="bg-slate-900 p-2.5 rounded-xl border border-slate-800 text-center text-sky-400 font-extrabold text-sm select-all">
+                01827404265
+            </div>
+        </div>
+    </div>
+
+    <header class="sticky top-0 z-30 px-4 py-3 glass mx-3 rounded-2xl flex items-center justify-between shadow-xl mb-3">
+        <div class="flex items-center space-x-2.5">
+            <img id="headerAvatar" src="https://via.placeholder.com/150" class="w-9 h-9 rounded-full border-2 border-sky-500/50 object-cover" alt="User">
+            <div>
+                <h1 id="headerName" class="text-xs font-bold text-white leading-tight">লোড হচ্ছে...</h1>
+                <p id="headerAppId" class="text-[9px] text-slate-400 font-mono">ID: --</p>
+            </div>
+        </div>
+        <button onclick="switchTab('CoinShop')" class="flex items-center space-x-1.5 bg-amber-500/10 border border-amber-500/30 text-amber-400 px-3 py-1.5 rounded-full text-xs font-bold active:scale-95 transition">
+            <i class="fa-solid fa-coins"></i>
+            <span id="headerCoins">0</span>
+        </button>
+    </header>
+
+    <div class="px-3 mb-3">
+        <div class="relative">
+            <input type="text" id="searchInput" onkeyup="handleSearch()" placeholder="মুভি বা ভিডিওর নাম লিখে সার্চ করুন..." class="w-full bg-slate-900/90 border border-slate-700/80 rounded-2xl py-2.5 pl-10 pr-4 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-sky-500 transition">
+            <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-3 text-slate-500 text-xs"></i>
+        </div>
+    </div>
+
+    <main class="px-3 space-y-4">
+
+        <section id="tabHome" class="tab-screen space-y-3">
+            <div class="flex justify-between items-center px-1">
+                <h2 class="text-xs font-bold text-slate-200 flex items-center gap-2">
+                    <i class="fa-solid fa-fire text-sky-400"></i> সব সাম্প্রতিক ভিডিও
+                </h2>
+                <span class="text-[10px] text-slate-500" id="videoCountText">লোড হচ্ছে...</span>
+            </div>
+
+            <div id="videoGrid" class="grid grid-cols-2 gap-3">
+                <div class="animate-pulse space-y-2 glass p-2 rounded-xl border border-slate-800">
+                    <div class="thumb-box bg-slate-800"></div>
+                    <div class="h-3 bg-slate-800 rounded w-3/4"></div>
+                </div>
+                <div class="animate-pulse space-y-2 glass p-2 rounded-xl border border-slate-800">
+                    <div class="thumb-box bg-slate-800"></div>
+                    <div class="h-3 bg-slate-800 rounded w-3/4"></div>
+                </div>
+            </div>
+
+            <div id="noResults" class="hidden text-center py-12 text-slate-500 space-y-2">
+                <i class="fa-solid fa-film text-3xl"></i>
+                <p class="text-xs">কোনো ভিডিও পাওয়া যায়নি!</p>
+            </div>
+        </section>
+
+        <section id="tabCoinShop" class="tab-screen hidden glass p-4 rounded-2xl space-y-4">
+            <div class="border-b border-slate-700/60 pb-3">
+                <h2 class="text-xs font-bold text-amber-400 flex items-center gap-2">
+                    <i class="fa-solid fa-store"></i> কয়েন শপ (Coin Shop)
+                </h2>
+                <p class="text-[10px] text-slate-400 mt-0.5">সহজেই কয়েন কিনুন bKash বা Nagad দিয়ে।</p>
+            </div>
+
+            <div class="bg-amber-500/10 border border-amber-500/20 p-3 rounded-xl text-xs space-y-1">
+                <span class="text-amber-400 font-bold block">অফিশিয়াল পেমেন্ট নম্বর:</span>
+                <p class="font-extrabold text-white text-sm select-all">01827404265 (bKash & Nagad)</p>
+                <p class="text-[9px] text-slate-400">* সেন্ড মানি বা ক্যাশ-ইন করে নিচের ফর্মটি সাবমিট করুন।</p>
+            </div>
+
+            <form onsubmit="handleDepositSubmit(event)" class="space-y-3 text-xs">
+                <div>
+                    <label class="block text-slate-400 mb-1">প্যাকেজ নির্বাচন করুন</label>
+                    <select id="depPackage" required class="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-white focus:border-amber-400 outline-none">
+                        <option value="100 Coins - 50 BDT">100 Coins = 50 BDT</option>
+                        <option value="250 Coins - 100 BDT">250 Coins = 100 BDT</option>
+                        <option value="600 Coins - 200 BDT">600 Coins = 200 BDT</option>
+                    </select>
+                </div>
+
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="block text-slate-400 mb-1">পেমেন্ট মেথড</label>
+                        <select id="depMethod" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-white focus:border-amber-400 outline-none">
+                            <option value="bKash">bKash</option>
+                            <option value="Nagad">Nagad</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-slate-400 mb-1">প্রেরক নম্বর</label>
+                        <input type="text" id="depSender" placeholder="017xxxxxxxx" required class="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-white focus:border-amber-400 outline-none">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-slate-400 mb-1">ট্রানজেকশন আইডি (TrxID)</label>
+                    <input type="text" id="depTrx" placeholder="যেমন: 9J38KS92" required class="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-white focus:border-amber-400 outline-none">
+                </div>
+
+                <div>
+                    <label class="block text-slate-400 mb-1">পেমেন্ট স্ক্রিনশট</label>
+                    <input type="file" id="depScreenshot" accept="image/*" required class="w-full bg-slate-900 border border-slate-700 rounded-xl p-2 text-slate-400 file:mr-2 file:py-1 file:px-2.5 file:rounded-lg file:border-0 file:bg-amber-500 file:text-slate-950 file:font-bold text-[11px]">
+                </div>
+
+                <button type="submit" id="depSubmitBtn" class="w-full bg-amber-500 active:scale-95 text-slate-950 font-bold py-3 rounded-xl shadow-lg transition">
+                    পেমেন্ট সাবমিট করুন
+                </button>
+            </form>
+        </section>
+
+        <section id="tabTasks" class="tab-screen hidden glass p-4 rounded-2xl space-y-3">
+            <h2 class="text-xs font-bold text-slate-200 border-b border-slate-700/60 pb-2 flex items-center gap-2">
+                <i class="fa-solid fa-list-check text-purple-400"></i> ফ্রি কয়েন টাস্ক
+            </h2>
+            <div id="userTaskList" class="space-y-2">
+                <p class="text-center text-slate-500 py-4 text-xs">টাস্ক লোড হচ্ছে...</p>
+            </div>
+        </section>
+
+        <section id="tabHistory" class="tab-screen hidden glass p-4 rounded-2xl space-y-3">
+            <h2 class="text-xs font-bold text-slate-200 border-b border-slate-700/60 pb-2 flex items-center gap-2">
+                <i class="fa-solid fa-clock-rotate-left text-sky-400"></i> আপনার হিস্টোরি
+            </h2>
+            <div id="historyList" class="space-y-2">
+                <p class="text-center text-slate-500 py-4 text-xs">হিস্টোরি লোড হচ্ছে...</p>
+            </div>
+        </section>
+
+        <section id="tabProfile" class="tab-screen hidden glass p-4 rounded-2xl space-y-4">
+            <div class="flex items-center space-x-3 border-b border-slate-700/60 pb-3">
+                <img id="profAvatar" src="https://via.placeholder.com/150" class="w-14 h-14 rounded-full border-2 border-sky-400 object-cover" alt="Profile">
+                <div>
+                    <h3 id="profName" class="font-bold text-sm text-white">--</h3>
+                    <p id="profUsername" class="text-xs text-slate-400">@username</p>
+                    <span id="profAppId" class="inline-block mt-1 text-[9px] bg-sky-500/20 text-sky-400 border border-sky-500/30 px-2 py-0.5 rounded-full font-mono">App ID: --</span>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2 text-[11px]">
+                <div class="bg-slate-900/60 p-2.5 rounded-xl border border-slate-800">
+                    <span class="text-slate-400 block">টেলিগ্রাম আইডি</span>
+                    <span id="profTgId" class="font-bold text-slate-200 font-mono">--</span>
+                </div>
+                <div class="bg-slate-900/60 p-2.5 rounded-xl border border-slate-800">
+                    <span class="text-slate-400 block">জয়েন তারিখ</span>
+                    <span id="profJoined" class="font-bold text-slate-200">--</span>
+                </div>
+                <div class="bg-slate-900/60 p-2.5 rounded-xl border border-slate-800">
+                    <span class="text-slate-400 block">বর্তমান কয়েন</span>
+                    <span id="profCoins" class="font-extrabold text-amber-400">0</span>
+                </div>
+                <div class="bg-slate-900/60 p-2.5 rounded-xl border border-slate-800">
+                    <span class="text-slate-400 block">আনলক ভিডিও</span>
+                    <span id="profUnlocked" class="font-bold text-sky-400">0</span>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <nav class="fixed bottom-0 left-0 right-0 glass border-t border-slate-800 px-3 py-2 flex justify-around items-center z-40">
+        <button onclick="switchTab('Home')" id="navHome" class="nav-btn flex flex-col items-center space-y-1 text-sky-400">
+            <i class="fa-solid fa-house text-base"></i>
+            <span class="text-[10px] font-bold">হোম</span>
+        </button>
+        <button onclick="switchTab('CoinShop')" id="navCoinShop" class="nav-btn flex flex-col items-center space-y-1 text-slate-400">
+            <i class="fa-solid fa-store text-base"></i>
+            <span class="text-[10px] font-bold">কয়েন শপ</span>
+        </button>
+        <button onclick="switchTab('Tasks')" id="navTasks" class="nav-btn flex flex-col items-center space-y-1 text-slate-400">
+            <i class="fa-solid fa-list-check text-base"></i>
+            <span class="text-[10px] font-bold">টাস্ক</span>
+        </button>
+        <button onclick="switchTab('History')" id="navHistory" class="nav-btn flex flex-col items-center space-y-1 text-slate-400">
+            <i class="fa-solid fa-clock-rotate-left text-base"></i>
+            <span class="text-[10px] font-bold">হিস্টোরি</span>
+        </button>
+        <button onclick="switchTab('Profile')" id="navProfile" class="nav-btn flex flex-col items-center space-y-1 text-slate-400">
+            <i class="fa-solid fa-user text-base"></i>
+            <span class="text-[10px] font-bold">প্রোফাইল</span>
+        </button>
+    </nav>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getDatabase, ref, set, get, push, onValue, update } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+        // Firebase Configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyDDE2Uso5AU4BdcG6RT9lfNmDGjx6A0myM",
+            authDomain: "movie-zone-ubdg.firebaseapp.com",
+            databaseURL: "https://movie-zone-ubdg-default-rtdb.firebaseio.com",
+            projectId: "movie-zone-ubdg",
+            storageBucket: "movie-zone-ubdg.firebasestorage.app",
+            messagingSenderId: "640511850305",
+            appId: "1:640511850305:web:d2181dbd8dc2b8ba0993c0"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+        const IMGBB_KEY = "ea8284407f0689742946d416020168f6";
+
+        // Telegram WebApp Initialization
+        const tg = window.Telegram?.WebApp;
+        if(tg) {
+            tg.expand();
+            tg.ready();
+        }
+
+        let currentUser = null;
+        let userId = null;
+        let allVideos = {};
+        let adProgress = {};
+
+        // Auto Authentication Handler
+        async function initAuth() {
+            const tgUser = tg?.initDataUnsafe?.user || {
+                id: "10928374",
+                first_name: "Demo",
+                last_name: "User",
+                username: "demouser",
+                photo_url: "https://via.placeholder.com/150"
+            };
+
+            userId = tgUser.id.toString();
+            const userRef = ref(db, `users/${userId}`);
+            const snapshot = await get(userRef);
+
+            if (!snapshot.exists()) {
+                const appId = "MZ-" + Math.floor(100000 + Math.random() * 900000);
+                const today = new Date().toLocaleDateString('en-GB');
+
+                currentUser = {
+                    tgId: userId,
+                    appId: appId,
+                    name: `${tgUser.first_name} ${tgUser.last_name || ''}`.trim(),
+                    username: tgUser.username || 'N/A',
+                    photo: tgUser.photo_url || 'https://via.placeholder.com/150',
+                    coins: 0,
+                    joinedAt: today,
+                    isBanned: false,
+                    unlocked: {},
+                    completedTasks: {}
+                };
+                await set(userRef, currentUser);
+            } else {
+                currentUser = snapshot.val();
+            }
+
+            listenUserData();
+            listenVideos();
+            listenTasks();
+        }
+
+        // Live Realtime User Profile & Status Sync
+        function listenUserData() {
+            onValue(ref(db, `users/${userId}`), (snapshot) => {
+                if (snapshot.exists()) {
+                    currentUser = snapshot.val();
+                    
+                    if (currentUser.isBanned) {
+                        document.getElementById('banReasonMsg').innerText = currentUser.banReason || "অনিয়মের কারণে আপনার অ্যাকাউন্টটি বন্ধ করা হয়েছে।";
+                        document.getElementById('banScreen').classList.remove('hidden');
+                        return;
+                    } else {
+                        document.getElementById('banScreen').classList.add('hidden');
+                    }
+
+                    // Header Updates
+                    document.getElementById('headerAvatar').src = currentUser.photo;
+                    document.getElementById('headerName').innerText = currentUser.name;
+                    document.getElementById('headerAppId').innerText = `ID: ${currentUser.appId}`;
+                    document.getElementById('headerCoins').innerText = currentUser.coins || 0;
+
+                    // Profile Section Updates
+                    document.getElementById('profAvatar').src = currentUser.photo;
+                    document.getElementById('profName').innerText = currentUser.name;
+                    document.getElementById('profUsername').innerText = `@${currentUser.username}`;
+                    document.getElementById('profAppId').innerText = `App ID: ${currentUser.appId}`;
+                    document.getElementById('profTgId').innerText = currentUser.tgId;
+                    document.getElementById('profJoined').innerText = currentUser.joinedAt;
+                    document.getElementById('profCoins').innerText = currentUser.coins || 0;
+                    document.getElementById('profUnlocked').innerText = currentUser.unlocked ? Object.keys(currentUser.unlocked).length : 0;
+
+                    renderHistory();
+                }
+            });
+        }
+
+        // Realtime Videos Sync & Display Grid
+        function listenVideos() {
+            onValue(ref(db, 'videos'), (snapshot) => {
+                const grid = document.getElementById('videoGrid');
+                grid.innerHTML = '';
+                
+                if (snapshot.exists()) {
+                    allVideos = snapshot.val();
+                    const keys = Object.keys(allVideos).reverse();
+                    document.getElementById('videoCountText').innerText = `${keys.length} Videos`;
+
+                    keys.forEach(vidId => {
+                        const v = allVideos[vidId];
+                        const isUnlocked = currentUser?.unlocked?.[vidId] || false;
+
+                        const card = document.createElement('div');
+                        card.className = "glass p-2 rounded-xl space-y-2 border border-slate-800 vid-card flex flex-col justify-between";
+                        card.setAttribute('data-title', v.title.toLowerCase());
+
+                        card.innerHTML = `
+                            <div class="space-y-1.5">
+                                <div class="thumb-box">
+                                    <img src="${v.thumbnail}" loading="lazy" alt="thumbnail">
+                                    <span class="absolute top-1.5 right-1.5 text-[8px] px-1.5 py-0.5 rounded font-bold shadow-md ${v.type === 'premium' ? 'bg-amber-500 text-slate-950' : 'bg-sky-500 text-white'}">
+                                        ${v.type === 'premium' ? `${v.cost} Coins` : 'Free'}
+                                    </span>
+                                </div>
+                                <h3 class="text-[11px] font-bold text-white line-clamp-2 leading-tight">${v.title}</h3>
+                            </div>
+                            <button onclick="handleVideoClick('${vidId}')" class="w-full py-2 rounded-lg text-[10px] font-bold transition flex items-center justify-center gap-1 ${isUnlocked ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-sky-500 text-white active:scale-95 shadow-md'}">
+                                <i class="fa-solid ${isUnlocked ? 'fa-play' : (v.type === 'premium' ? 'fa-lock' : 'fa-rectangle-ad')}"></i>
+                                ${isUnlocked ? 'Watch Video' : (v.type === 'premium' ? 'Unlock Video' : 'Watch Ad (0/3)')}
+                            </button>
+                        `;
+                        grid.appendChild(card);
+                    });
+                } else {
+                    document.getElementById('noResults').classList.remove('hidden');
+                }
+            });
+        }
+
+        // Video Action Handler (Unlock or Play)
+        window.handleVideoClick = function(vidId) {
+            const v = allVideos[vidId];
+            if (!v) return;
+
+            const isUnlocked = currentUser?.unlocked?.[vidId];
+            if (isUnlocked) {
+                if (tg && tg.openLink) {
+                    tg.openLink(v.url);
+                } else {
+                    window.open(v.url, '_blank');
+                }
+                return;
+            }
+
+            if (v.type === 'premium') {
+                if ((currentUser.coins || 0) < v.cost) {
+                    alert('আপনার পর্যাপ্ত কয়েন নেই! কয়েন শপ থেকে কয়েন কিনুন।');
+                    switchTab('CoinShop');
+                    return;
+                }
+
+                if (confirm(`${v.cost} Coins দিয়ে ভিডিওটি আনলক করতে চান?`)) {
+                    const newBalance = currentUser.coins - v.cost;
+                    update(ref(db, `users/${userId}`), { coins: newBalance });
+                    update(ref(db, `users/${userId}/unlocked/${vidId}`), true);
+
+                    push(ref(db, `users/${userId}/history`), {
+                        title: `Unlocked Premium: ${v.title}`,
+                        type: 'Spend',
+                        amount: v.cost,
+                        date: new Date().toLocaleString()
+                    });
+                    alert('ভিডিওটি সফলভাবে আনলক করা হয়েছে!');
+                }
+            } else {
+                let count = adProgress[vidId] || 0;
+                
+                if (v.adUrl && v.adUrl.startsWith('http')) {
+                    window.open(v.adUrl, '_blank');
+                    count++;
+                } else if (typeof show_11495270 === 'function') {
+                    show_11495270('pop');
+                    count++;
+                } else {
+                    alert('বিজ্ঞাপনটি লোড হতে ব্যর্থ হয়েছে!');
+                    return;
+                }
+
+                adProgress[vidId] = count;
+
+                if (count >= 3) {
+                    update(ref(db, `users/${userId}/unlocked/${vidId}`), true);
+                    push(ref(db, `users/${userId}/history`), {
+                        title: `Unlocked Free: ${v.title}`,
+                        type: 'Free Unlock',
+                        date: new Date().toLocaleString()
+                    });
+                    alert('অভিনন্দন! ৩টি অ্যাড সম্পন্ন হয়েছে, ভিডিও আনলক করা হলো।');
+                } else {
+                    alert(`বিজ্ঞাপন দেখা হয়েছে (${count}/৩)। ভিডিও আনলক করতে আরও ${3 - count} টি অ্যাড দেখুন।`);
+                }
+            }
+        };
+
+        // Realtime Tasks Listener with "Once-per-user" Completion Logic
+        function listenTasks() {
+            onValue(ref(db, 'tasks'), (snapshot) => {
+                const list = document.getElementById('userTaskList');
+                list.innerHTML = '';
+                if (snapshot.exists()) {
+                    const tasks = snapshot.val();
+                    Object.keys(tasks).reverse().forEach(tKey => {
+                        const t = tasks[tKey];
+                        const isCompleted = currentUser?.completedTasks?.[tKey] || false;
+
+                        const div = document.createElement('div');
+                        div.className = "glass p-3 rounded-xl border border-slate-800 flex justify-between items-center";
+                        div.innerHTML = `
+                            <div>
+                                <h4 class="text-xs font-bold text-white">${t.title}</h4>
+                                <p class="text-[9px] text-slate-400">${t.network || 'Task'} | <span class="text-amber-400 font-bold">+${t.reward} Coins</span></p>
+                            </div>
+                            <button onclick="completeTask('${tKey}', '${t.adUrl || ''}', ${t.reward})" ${isCompleted ? 'disabled' : ''} class="${isCompleted ? 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700' : 'bg-purple-600 hover:bg-purple-700 active:scale-95 text-white shadow-md'} px-3 py-1.5 rounded-lg text-xs font-bold transition">
+                                ${isCompleted ? 'Completed' : 'Complete'}
+                            </button>
+                        `;
+                        list.appendChild(div);
+                    });
+                } else {
+                    list.innerHTML = `<p class="text-center text-slate-500 py-4 text-xs">কোনো টাস্ক উপলব্ধ নেই।</p>`;
+                }
+            });
+        }
+
+        // Complete Earn Task
+        window.completeTask = function(tKey, adUrl, reward) {
+            if (currentUser?.completedTasks?.[tKey]) {
+                alert('আপনি ইতোমধ্যে এই টাস্কটি পূরণ করেছেন!');
+                return;
+            }
+
+            if (adUrl && adUrl.startsWith('http')) {
+                window.open(adUrl, '_blank');
+            } else if (typeof show_11495270 === 'function') {
+                show_11495270('pop');
+            }
+
+            const newCoins = (currentUser.coins || 0) + reward;
+            update(ref(db, `users/${userId}`), { coins: newCoins });
+            update(ref(db, `users/${userId}/completedTasks/${tKey}`), true);
+
+            push(ref(db, `users/${userId}/history`), {
+                title: `Task Earn Reward`,
+                type: 'Earn',
+                amount: reward,
+                date: new Date().toLocaleString()
+            });
+
+            alert(`টাস্ক সম্পন্ন হয়েছে! +${reward} কয়েন ওয়ালেটে যোগ করা হয়েছে।`);
+        };
+
+        // Live Title Search
+        window.handleSearch = function() {
+            const query = document.getElementById('searchInput').value.toLowerCase();
+            const cards = document.querySelectorAll('.vid-card');
+            let visibleCount = 0;
+
+            cards.forEach(card => {
+                const title = card.getAttribute('data-title');
+                if (title.includes(query)) {
+                    card.classList.remove('hidden');
+                    visibleCount++;
+                } else {
+                    card.classList.add('hidden');
+                }
+            });
+
+            document.getElementById('noResults').classList.toggle('hidden', visibleCount > 0);
+        };
+
+        // Deposit Payment Request with ImgBB Screenshot Direct Upload
+        window.handleDepositSubmit = async function(e) {
+            e.preventDefault();
+            const btn = document.getElementById('depSubmitBtn');
+            btn.innerText = "আপলোড হচ্ছে..."; 
+            btn.disabled = true;
+
+            try {
+                const file = document.getElementById('depScreenshot').files[0];
+                const formData = new FormData();
+                formData.append('image', file);
+
+                const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_KEY}`, { 
+                    method: 'POST', 
+                    body: formData 
+                });
+                const imgData = await res.json();
+                if (!imgData.success) throw new Error("ছবি আপলোড হতে ব্যর্থ হয়েছে!");
+
+                await push(ref(db, 'payments'), {
+                    userId: userId,
+                    appId: currentUser.appId,
+                    userName: currentUser.name,
+                    package: document.getElementById('depPackage').value,
+                    method: document.getElementById('depMethod').value,
+                    sender: document.getElementById('depSender').value,
+                    trxId: document.getElementById('depTrx').value,
+                    screenshot: imgData.data.url,
+                    status: 'Pending',
+                    date: new Date().toLocaleString()
+                });
+
+                alert('পেমেন্ট রিকোয়েস্ট সাবমিট করা হয়েছে! অ্যাডমিন ভেরিফাই করে কয়েন যোগ করে দেবে।');
+                e.target.reset();
+            } catch (err) { 
+                alert('ত্রুটি: ' + err.message); 
+            } finally { 
+                btn.innerText = "পেমেন্ট সাবমিট করুন"; 
+                btn.disabled = false; 
+            }
+        };
+
+        // History Log Renderer
+        function renderHistory() {
+            const list = document.getElementById('historyList');
+            if (currentUser.history) {
+                list.innerHTML = '';
+                Object.values(currentUser.history).reverse().forEach(h => {
+                    const div = document.createElement('div');
+                    div.className = "bg-slate-900/80 p-2.5 rounded-xl border border-slate-800 flex justify-between items-center text-xs";
+                    div.innerHTML = `
+                        <div>
+                            <h4 class="font-bold text-white">${h.title}</h4>
+                            <span class="text-[9px] text-slate-500">${h.date}</span>
+                        </div>
+                        <span class="font-bold ${h.type === 'Spend' ? 'text-red-400' : 'text-emerald-400'}">
+                            ${h.amount ? `${h.type === 'Spend' ? '-' : '+'}${h.amount} Coins` : h.type}
+                        </span>
+                    `;
+                    list.appendChild(div);
+                });
+            } else {
+                list.innerHTML = `<p class="text-center text-slate-500 py-4 text-xs">কোনো হিস্টোরি পাওয়া যায়নি।</p>`;
+            }
+        }
+
+        // Tab Navigation Switcher
+        window.switchTab = function(tabName) {
+            document.querySelectorAll('.tab-screen').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.nav-btn').forEach(el => el.className = "nav-btn flex flex-col items-center space-y-1 text-slate-400");
+
+            document.getElementById(`tab${tabName}`).classList.remove('hidden');
+            document.getElementById(`nav${tabName}`).className = "nav-btn flex flex-col items-center space-y-1 text-sky-400";
+        };
+
+        // Telegram Native BackButton Hook
+        if (tg?.BackButton) {
+            tg.BackButton.onClick(() => {
+                const activeTab = document.querySelector('.tab-screen:not(.hidden)')?.id;
+                if (activeTab && activeTab !== 'tabHome') {
+                    switchTab('Home');
+                } else {
+                    tg.close();
+                }
+            });
+        }
+
+        // Initialize App Auth
+        initAuth();
+    </script>
+</body>
+</html>
